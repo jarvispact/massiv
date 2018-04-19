@@ -1,0 +1,15 @@
+{
+  "extends": "airbnb-base",
+  "env": {
+    "node": true,
+    "jest": true,
+    "es6": true
+  },
+  "rules": {
+    "indent": ["error", 4],
+    "max-len": ["error", 150],
+    "arrow-body-style": ["error", "as-needed"],
+    "arrow-parens": "off",
+    "object-curly-newline": "off",
+  }
+}
