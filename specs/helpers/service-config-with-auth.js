@@ -8,4 +8,8 @@ module.exports = {
             algorithms: ['HS256'],
         },
     },
+    services: {
+        mailer: { baseURL: 'http://localhost:3001' },
+        account: { baseURL: 'http://localhost:3002' },
+    },
 };
