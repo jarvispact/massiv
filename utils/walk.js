@@ -18,7 +18,8 @@ const walk = (currentFolder, initialFolder) => {
             const parsed = path.parse(pathParts[1]);
             const method = parsed.name;
             const route = parsed.dir;
-            const { handler } = require(absoluteFilePath); // eslint-disable-line
+            const module = require(absoluteFilePath); // eslint-disable-line
+            const handler = typeof module === 'function' ? module : module.handler;
             filePathList.push({ method, route, handler });
         }
     });
