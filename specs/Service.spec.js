@@ -279,7 +279,7 @@ test('it should return the http status: "200" if a valid token was sent', async 
     await service.stop();
 });
 
-test('it should return the http status: "200" if a valid token was sent', async () => {
+test('it should throw an error if stop was called before start on a service instance', async () => {
     const service = new Service(serviceConfig);
     try {
         await service.stop();
