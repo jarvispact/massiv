@@ -16,11 +16,8 @@ const walk = (currentFolder, initialFolder) => {
         } else {
             const pathParts = absoluteFilePath.split(new RegExp(initialFolder));
             const parsed = path.parse(pathParts[1]);
-            const method = parsed.name;
-            const route = parsed.dir;
-            const module = require(absoluteFilePath); // eslint-disable-line
-            const handler = typeof module === 'function' ? module : module.handler;
-            filePathList.push({ method, route, handler });
+            const { dir, base, name, ext } = parsed;
+            filePathList.push({ absoluteFilePath, dir, base, name, ext });
         }
     });
 
