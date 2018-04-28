@@ -287,3 +287,20 @@ test('it should throw an error if stop was called before start on a service inst
         expect(e.message).toEqual('Service not yet started');
     }
 });
+
+test('it should parse all queries if a db and queryList is present', async () => {
+    const configWithDb = {
+        ...serviceConfig,
+        server: {
+            ...serviceConfig.server,
+            queryFolder: path.join(__dirname, './test-query-folder'),
+        },
+    };
+    const testDB = { connection: null };
+    const service = new Service({ config: configWithDb, db: testDB });
+    const queryList = service.parseQueryFolder();
+    const input = { userId: '1234' };
+    const promises = Object.entries(queryList).map(([name, query]) => query(input)); // eslint-disable-line no-unused-vars
+    const queryResults = await Promise.all(promises);
+    queryResults.forEach(result => expect(result).toEqual({ db: testDB, result: input }));
+});
