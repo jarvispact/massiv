@@ -27,12 +27,12 @@ test('it should throw if no config was passed to the Service constructor', () =>
 });
 
 test('it should throw if no config.server was passed to the Service constructor', () => {
-    const getInstance = () => new Service({});
+    const getInstance = () => new Service({ config: {} });
     expect(getInstance).toThrowError('missing parameter "config.server"');
 });
 
 test('it should create a new Service Instance', () => {
-    const service = new Service(serviceConfig);
+    const service = new Service({ config: serviceConfig });
     expect(service).toHaveProperty('config');
     expect(service).toHaveProperty('logger');
     expect(service).toHaveProperty('frameworkAdapter');
@@ -40,14 +40,14 @@ test('it should create a new Service Instance', () => {
 });
 
 test('it should parse the handler folder recursively', () => {
-    const service = new Service(serviceConfig);
+    const service = new Service({ config: serviceConfig });
     const handlerList = service.parseHandlerFolder();
     const handlerListWithoutFunctions = handlerList.map(item => ({ method: item.method, route: item.route }));
     handlerListWithoutFunctions.forEach(item => expect(expectedTestHandlerFolderArray).toContainEqual(item));
 });
 
 test('it should expose a handler function for each file in the test-handler-folder', async () => {
-    const service = new Service(serviceConfig);
+    const service = new Service({ config: serviceConfig });
     const handlerList = service.parseHandlerFolder();
     const input = { params: {}, query: {}, body: {} };
     const promises = handlerList.map(file => file.handler(input));
@@ -56,7 +56,7 @@ test('it should expose a handler function for each file in the test-handler-fold
 });
 
 test('it should start a server and expose all handlers', async () => {
-    const service = new Service(serviceConfig);
+    const service = new Service({ config: serviceConfig });
     const handlerList = service.parseHandlerFolder();
     await service.start();
     const input = { query: { test: 'test' } };
@@ -90,7 +90,7 @@ test('it should call the FrameworkAdapter Methods', async () => {
     };
     /* eslint-enable */
 
-    const service = new Service(serviceConfig, TestAdapter);
+    const service = new Service({ config: serviceConfig, FrameworkAdapter: TestAdapter });
     await service.start();
     await service.stop();
     expect(setupHandlersCalled).toEqual(true);
@@ -107,7 +107,7 @@ test('it should catch a error in the handler and return a boom http error', asyn
         },
     };
 
-    const service = new Service(monkeyPatchedConfig);
+    const service = new Service({ config: monkeyPatchedConfig });
     await service.start();
 
     try {
@@ -133,7 +133,7 @@ test('it should catch a boom error in the handler and return a boom http error',
         },
     };
 
-    const service = new Service(monkeyPatchedConfig);
+    const service = new Service({ config: monkeyPatchedConfig });
     await service.start();
 
     try {
@@ -159,7 +159,7 @@ test('it should return the http status: "404" if no handler was exported by the 
         },
     };
 
-    const service = new Service(monkeyPatchedConfig);
+    const service = new Service({ config: monkeyPatchedConfig });
     await service.start();
 
     try {
@@ -177,7 +177,7 @@ test('it should return the http status: "404" if no handler was exported by the 
 });
 
 test('it should return the http status: "401" if a invalid token structure was sent', async () => {
-    const service = new Service(serviceConfigWithAuth);
+    const service = new Service({ config: serviceConfigWithAuth });
     await service.start();
 
     try {
@@ -198,7 +198,7 @@ test('it should return the http status: "401" if a invalid token structure was s
 
 test('it should return the http status: "401" if a invalid token was sent', async () => {
     const invalidToken = 'Bearer eyJhbGciOiJIU.eyJleHAiOjE1MjM3OTg2OTI.AHr7fONMc';
-    const service = new Service(serviceConfigWithAuth);
+    const service = new Service({ config: serviceConfigWithAuth });
     await service.start();
 
     try {
@@ -218,7 +218,7 @@ test('it should return the http status: "401" if a invalid token was sent', asyn
 });
 
 test('it should return the http status: "401" if no Authorization header was sent', async () => {
-    const service = new Service(serviceConfigWithAuth);
+    const service = new Service({ config: serviceConfigWithAuth });
     await service.start();
 
     try {
@@ -243,7 +243,7 @@ test('it should return the http status: "401" if a expired token was sent', asyn
 
     await sleep(100);
 
-    const service = new Service(serviceConfigWithAuth);
+    const service = new Service({ config: serviceConfigWithAuth });
     await service.start();
 
     try {
@@ -268,7 +268,7 @@ test('it should return the http status: "200" if a valid token was sent', async 
         data: 'foobar',
     }, serviceConfigWithAuth.auth.secretOrPublicKey);
 
-    const service = new Service(serviceConfigWithAuth);
+    const service = new Service({ config: serviceConfigWithAuth });
     await service.start();
 
     const res = await request.get('/', {
@@ -280,7 +280,7 @@ test('it should return the http status: "200" if a valid token was sent', async 
 });
 
 test('it should throw an error if stop was called before start on a service instance', async () => {
-    const service = new Service(serviceConfig);
+    const service = new Service({ config: serviceConfig });
     try {
         await service.stop();
     } catch (e) {
