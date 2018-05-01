@@ -46,15 +46,6 @@ test('it should parse the handler folder recursively', () => {
     handlerListWithoutFunctions.forEach(item => expect(expectedTestHandlerFolderArray).toContainEqual(item));
 });
 
-test('it should expose a handler function for each file in the test-handler-folder', async () => {
-    const service = new Service({ config: serviceConfig });
-    const handlerList = service.parseHandlerFolder();
-    const input = { params: {}, query: {}, body: {} };
-    const promises = handlerList.map(file => file.handler(input));
-    const handlerResults = await Promise.all(promises);
-    handlerResults.forEach(result => expect(result).toEqual({ response: input }));
-});
-
 test('it should start a server and expose all handlers', async () => {
     const service = new Service({ config: serviceConfig });
     const handlerList = service.parseHandlerFolder();

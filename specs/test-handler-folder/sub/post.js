@@ -1,1 +1,1 @@
-module.exports.handler = async ({ params, query, body }) => ({ response: { params, query, body } });
+module.exports.handler = async ({ params, query, body }) => ({ status: 200, response: { params, query, body } });
