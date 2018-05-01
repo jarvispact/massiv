@@ -226,6 +226,26 @@ test('it should return the http status: "401" if no Authorization header was sen
     await service.stop();
 });
 
+test('it should not check for the token if auth is active but the route was excluded', async () => {
+    const configWithAuthAndExcludesArray = {
+        ...serviceConfigWithAuth,
+        auth: {
+            ...serviceConfigWithAuth.auth,
+            excludedRoutes: [
+                { method: 'get', route: '/sub' },
+            ],
+        },
+    };
+
+    const service = new Service({ config: configWithAuthAndExcludesArray });
+    await service.start();
+
+    const res = await request.get('/sub');
+    expect(res.status).toEqual(200);
+
+    await service.stop();
+});
+
 test('it should return the http status: "401" if a expired token was sent', async () => {
     const token = jwt.sign({
         exp: Math.floor(Date.now() / 1000),

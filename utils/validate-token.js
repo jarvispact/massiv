@@ -1,8 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (authConfig, headers) => {
+const useAuth = (config, method, route) => {
+    if (!config) return false;
+    const excludedRoutes = Array.isArray(config.excludedRoutes) ? config.excludedRoutes : [];
+    const routeFound = excludedRoutes.find(r => r.method === method && r.route === route);
+    if (config && routeFound) return false;
+    return true;
+};
+
+module.exports = (authConfig, headers, method, route) => {
     try {
-        if (!authConfig) return { error: false, token: null };
+        if (!useAuth(authConfig, method, route)) return { error: false, token: null };
         const { authorization = '' } = headers;
         const authorizationParts = authorization.split(' ');
         const tokenFromHeader = authorizationParts[1];
