@@ -299,7 +299,7 @@ test('it should throw an error if stop was called before start on a service inst
     }
 });
 
-test('it should parse all queries if a db and queryList is present', async () => {
+test('it should parse all queries if a db and queryFolder is present', async () => {
     const configWithDb = {
         ...serviceConfig,
         server: {
@@ -314,4 +314,55 @@ test('it should parse all queries if a db and queryList is present', async () =>
     const promises = Object.entries(queryList).map(([name, query]) => query(input)); // eslint-disable-line no-unused-vars
     const queryResults = await Promise.all(promises);
     queryResults.forEach(result => expect(result).toEqual({ db: testDB, result: input }));
+});
+
+test('it should apply all migrations in the right order if a db and a migrationFolder is present', async () => {
+    const configWithDb = {
+        ...serviceConfig,
+        server: {
+            ...serviceConfig.server,
+            migrationFolder: path.join(__dirname, './test-migration-folder'),
+        },
+    };
+
+    const migrations = ['000_user.js', '001_pet.js', '002_drink.js'];
+    const files = migrations.map(migration => require(path.join(__dirname, `./test-migration-folder/${migration}`))); // eslint-disable-line
+
+    files.forEach((file) => {
+        expect(file.specs.up.called).toEqual(false);
+        expect(file.specs.up.param).toEqual(null);
+        expect(file.specs.down.called).toEqual(false);
+        expect(file.specs.down.param).toEqual(null);
+    });
+
+    const testDB = { connection: null };
+    const service = new Service({ config: configWithDb, db: testDB });
+    await service.applyMigrations();
+
+    files.forEach((file) => {
+        expect(file.specs.up.called).toEqual(true);
+        expect(file.specs.up.param).toEqual(testDB);
+        expect(file.specs.down.called).toEqual(true);
+        expect(file.specs.down.param).toEqual(testDB);
+    });
+
+    const sortedByUpTime1 = [].concat(files).sort((a, b) => a.specs.up.time - b.specs.up.time);
+    expect(sortedByUpTime1[0].specs.name).toEqual('user');
+    expect(sortedByUpTime1[1].specs.name).toEqual('pet');
+    expect(sortedByUpTime1[2].specs.name).toEqual('drink');
+
+    const sortedByUpTime2 = [].concat(files).sort((a, b) => b.specs.up.time - a.specs.up.time);
+    expect(sortedByUpTime2[0].specs.name).toEqual('drink');
+    expect(sortedByUpTime2[1].specs.name).toEqual('pet');
+    expect(sortedByUpTime2[2].specs.name).toEqual('user');
+
+    const sortedByDownTime1 = [].concat(files).sort((a, b) => b.specs.down.time - a.specs.down.time);
+    expect(sortedByDownTime1[0].specs.name).toEqual('user');
+    expect(sortedByDownTime1[1].specs.name).toEqual('pet');
+    expect(sortedByDownTime1[2].specs.name).toEqual('drink');
+
+    const sortedByDownTime2 = [].concat(files).sort((a, b) => a.specs.down.time - b.specs.down.time);
+    expect(sortedByDownTime2[0].specs.name).toEqual('drink');
+    expect(sortedByDownTime2[1].specs.name).toEqual('pet');
+    expect(sortedByDownTime2[2].specs.name).toEqual('user');
 });
