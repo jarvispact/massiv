@@ -208,3 +208,23 @@ test('it should allow to set a custom http status in the handler config', async 
 
     await service.stop();
 });
+
+test('it should setup all upstream services', async () => {
+    const fooSvcUrl = 'http://localhost:3002';
+    const barSvcUrl = 'http://localhost:3003';
+
+    const upstreamConfig = {
+        fooSvc: { baseURL: fooSvcUrl, timeout: 1000 },
+        barSvc: { baseURL: barSvcUrl, timeout: 1000 },
+    };
+
+    const service = new Service({ config: createConfig({ upstreams: upstreamConfig }) });
+    await service.start();
+
+    expect(service.upstreams).toHaveProperty('fooSvc');
+    expect(service.upstreams).toHaveProperty('barSvc');
+    expect(service.upstreams.fooSvc.defaults.baseURL).toEqual(fooSvcUrl);
+    expect(service.upstreams.barSvc.defaults.baseURL).toEqual(barSvcUrl);
+
+    await service.stop();
+});
