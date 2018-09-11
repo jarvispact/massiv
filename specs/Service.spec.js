@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 const { Service } = require('../');
 const { createConfig, createToken, request } = require('../spec-helpers');
 
@@ -225,6 +226,17 @@ test('it should setup all upstream services', async () => {
     expect(service.upstreams).toHaveProperty('barSvc');
     expect(service.upstreams.fooSvc.defaults.baseURL).toEqual(fooSvcUrl);
     expect(service.upstreams.barSvc.defaults.baseURL).toEqual(barSvcUrl);
+
+    await service.stop();
+});
+
+test('it should be possible to set the logLevel on the current service instance', async () => {
+    const service = new Service({ config: createConfig() });
+    await service.start();
+
+    expect(service.logger._levelVal).toEqual(Infinity);
+    service.setLogLevel('info');
+    expect(service.logger._levelVal).toEqual(30);
 
     await service.stop();
 });
