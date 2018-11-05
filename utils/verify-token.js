@@ -1,14 +1,14 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (authConfig, headers) => {
-    try {
-        const { secret, options } = authConfig;
-        const { authorization = '' } = headers;
-        const authorizationParts = authorization.split(' ');
-        const tokenFromHeader = authorizationParts[1];
-        const token = jwt.verify(tokenFromHeader, secret, options);
-        return { error: null, token };
-    } catch (error) {
-        return { error, token: null };
-    }
+module.exports = async (authConfig, headers) => {
+    const { secret, options } = authConfig;
+    const { authorization = '' } = headers;
+    const authorizationParts = authorization.split(' ');
+    const tokenFromHeader = authorizationParts[1];
+    return new Promise((resolve) => {
+        jwt.verify(tokenFromHeader, secret, options, (error, token) => {
+            if (error) return resolve({ error, token: null });
+            return resolve({ error: null, token });
+        });
+    });
 };
