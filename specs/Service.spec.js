@@ -91,38 +91,6 @@ test('it should return http 200 if authentication was successful', async () => {
     await service.stop();
 });
 
-test('it should return http 400 if the validation fails', async () => {
-    const service = new Service({ config: createConfig() });
-    await service.start();
-
-    try {
-        const body = { other: '42' };
-        await request.patch('/validation?other=42', body);
-    } catch ({ response }) {
-        expect(response.status).toEqual(400);
-        expect(response.data).toEqual({
-            statusCode: 400,
-            error: 'Bad Request',
-            message: 'data.query should have required property \'test\', data.body should have required property \'test\'',
-            code: 'E_VALIDATION_ERROR',
-        });
-    }
-
-    await service.stop();
-});
-
-test('it should return http 200 if the validation was successful', async () => {
-    const service = new Service({ config: createConfig() });
-    await service.start();
-
-    const body = { test: '42' };
-    const res = await request.patch('/validation?test=42', body);
-    expect(res.status).toEqual(200);
-    expect(res.data).toEqual({ params: {}, query: { test: '42' }, body });
-
-    await service.stop();
-});
-
 test('it should return http 500 if a normal error was thrown in the handler', async () => {
     const service = new Service({ config: createConfig() });
     await service.start();
@@ -206,26 +174,6 @@ test('it should allow to set a custom http status in the handler config', async 
 
     const { status } = await request.post('/status');
     expect(status).toEqual(201);
-
-    await service.stop();
-});
-
-test('it should setup all upstream services', async () => {
-    const fooSvcUrl = 'http://localhost:3002';
-    const barSvcUrl = 'http://localhost:3003';
-
-    const upstreamConfig = {
-        fooSvc: { baseURL: fooSvcUrl, timeout: 1000 },
-        barSvc: { baseURL: barSvcUrl, timeout: 1000 },
-    };
-
-    const service = new Service({ config: createConfig({ upstreams: upstreamConfig }) });
-    await service.start();
-
-    expect(service.upstreams).toHaveProperty('fooSvc');
-    expect(service.upstreams).toHaveProperty('barSvc');
-    expect(service.upstreams.fooSvc.defaults.baseURL).toEqual(fooSvcUrl);
-    expect(service.upstreams.barSvc.defaults.baseURL).toEqual(barSvcUrl);
 
     await service.stop();
 });

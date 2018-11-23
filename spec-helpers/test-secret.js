@@ -1,1 +1,1 @@
-module.exports = 'extremlysecurepassword';
+module.exports = 'extremlysecuresecret';

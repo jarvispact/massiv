@@ -10,10 +10,6 @@ module.exports = (props = {}) => ({
     logger: {
         level: props.logLevel || 'silent',
     },
-    validation: props.validation || {
-        allErrors: true,
-    },
-    upstreams: props.upstreams || undefined,
     auth: props.auth || {
         secret: testSecret,
         options: {
