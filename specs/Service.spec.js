@@ -182,9 +182,9 @@ test('it should be possible to set the logLevel on the current service instance'
     const service = new Service({ config: createConfig() });
     await service.start();
 
-    expect(service.logger._levelVal).toEqual(Infinity);
+    expect(service.logger.level).toEqual('silent');
     service.setLogLevel('info');
-    expect(service.logger._levelVal).toEqual(30);
+    expect(service.logger.level).toEqual('info');
 
     await service.stop();
 });
