@@ -7,4 +7,5 @@ const { host, port } = config.server;
 module.exports = axios.create({
     baseURL: `http://${host}:${port}/`,
     timeout: 1000,
+    validateStatus: () => true,
 });

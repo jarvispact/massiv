@@ -2,7 +2,7 @@
     "extends": "airbnb-base",
     "env": {
       "node": true,
-      "jest": true,
+      "mocha": true,
       "es6": true
     },
     "rules": {
@@ -13,6 +13,7 @@
       "object-curly-newline": "off",
       "newline-per-chained-call": "off",
       "consistent-return": "off",
+      "no-unused-expressions": "off",
       "import/no-extraneous-dependencies": ["error", {"devDependencies": ["**/*.specs.js", "./spec-helpers/*.js"]}]
     }
 }

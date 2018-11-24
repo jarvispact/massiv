@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const testSecret = require('./test-secret');
 
-module.exports = (props = {}) => jwt.sign({
-    exp: props.exp || Math.floor(Date.now() / 1000) + (60 * 60),
-    data: props.payload || { test: '42' },
-}, props.secret || testSecret);
+module.exports = (props = {}) => new Promise((resolve, reject) => {
+    jwt.sign({ data: props.data || { foo: 'bar' } }, props.secret || testSecret, { expiresIn: props.exp || '1h' }, (err, token) => {
+        if (err) return reject(err);
+        return resolve(token);
+    });
+});

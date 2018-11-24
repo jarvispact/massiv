@@ -1,6 +1,6 @@
 const walk = require('./walk');
 
-const filterSpecsFiles = file => !file.name.includes('.specs');
+const filterSpecsFiles = ({ name }) => /^delete|get|patch|post|put/.test(name);
 
 const mapFileToHandlerObject = (file) => ({
     method: file.name,
