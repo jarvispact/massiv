@@ -1,8 +1,0 @@
-{
-  "bail": true,
-  "verbose": true,
-  "collectCoverage": true,
-  "collectCoverageFrom" : ["**/lib/**/*.js", "**/utils/**/*.js", "!**/node_modules/**"],
-  "coverageDirectory": "./__coverage__",
-  "testEnvironment": "node"
-}
