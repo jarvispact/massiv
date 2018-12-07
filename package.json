@@ -1,6 +1,6 @@
 {
   "name": "massiv",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "a microservice framework for fast service and api development",
   "main": "index.js",
   "scripts": {
