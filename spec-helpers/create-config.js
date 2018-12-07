@@ -8,7 +8,7 @@ module.exports = (props = {}) => {
             handlerFolder: path.join(__dirname, props.handlerFolder || '../specs/test-handlers'),
         },
         logger: {
-            level: props.logLevel || 'silent',
+            level: process.env.LOG_LEVEL || props.logLevel || 'silent',
         },
     };
 

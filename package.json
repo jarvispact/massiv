@@ -4,7 +4,8 @@
   "description": "a microservice framework for fast service and api development",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha --recursive --exit ./specs"
+    "test": "nyc mocha --recursive --exit ./specs",
+    "test-service": "node test-service.js | pino-pretty"
   },
   "repository": {
     "type": "git",
@@ -28,7 +29,8 @@
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.14.0",
     "mocha": "^5.2.0",
-    "nyc": "^13.1.0"
+    "nyc": "^13.1.0",
+    "pino-pretty": "^2.4.0"
   },
   "dependencies": {
     "body-parser": "^1.18.2",
