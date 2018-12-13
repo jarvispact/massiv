@@ -198,9 +198,12 @@ describe('Service', () => {
             await service.start();
 
             const { status, data } = await request.post('/custom-status?foo=bar');
-
             expect(status).to.equal(201);
             expect(data).to.eql({ query: { foo: 'bar' } });
+
+            const { status: status2, data: data2 } = await request.delete('/custom-status?foo=bar');
+            expect(status2).to.equal(204);
+            expect(data2).to.equal('');
 
             await service.stop();
         });

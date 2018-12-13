@@ -1,3 +1,1 @@
-module.exports = async ({ query }) => ({ query });
-
-module.exports.config = { status: 201 };
+module.exports = async ({ query }) => ({ statusCode: 201, response: { query } });
