@@ -16,5 +16,9 @@ module.exports = (props = {}) => {
         config.auth = props.auth;
     }
 
+    if (props.acl) {
+        config.acl = props.acl;
+    }
+
     return config;
 };

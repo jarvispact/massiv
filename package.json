@@ -38,6 +38,7 @@
     "express": "^4.16.4",
     "jsonwebtoken": "^8.2.1",
     "pino": "^5.9.0",
+    "route-parser": "0.0.5",
     "uuid": "^3.3.2"
   },
   "nyc": {

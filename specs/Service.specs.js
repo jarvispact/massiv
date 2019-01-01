@@ -133,7 +133,7 @@ describe('Service', () => {
             await service.stop();
         });
 
-        it('should should pass the jwt auth if a valid token was sent in the "Authorization" header', async () => {
+        it('should pass the jwt auth if a valid token was sent in the "Authorization" header', async () => {
             const token = await createToken({ secret: testSecret, exp: '5m' });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth };
@@ -357,6 +357,495 @@ describe('Service', () => {
             results.forEach((result) => {
                 expect(result.status).to.equal(404);
                 expect(result.data).to.exist;
+            });
+
+            await service.stop();
+        });
+    });
+
+    describe('acl', () => {
+        it('should ignore the acl config if no routes array is provided', async () => {
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = {};
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            results.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should ignore the acl config if no fn is provided', async () => {
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: '/acls', methods: 'get', fn: undefined }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            results.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle a string for routes-, and a string for methods-config', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: '/acls', methods: 'get', fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            const [getResult, ...otherResults] = results;
+
+            expect(getResult.status).to.equal(401);
+            expect(getResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle a "*" for the methods config', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: '/acls', methods: '*', fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            results.forEach((result) => {
+                expect(result.status).to.equal(401);
+                expect(result.data).to.eql({
+                    statusCode: 401,
+                    error: 'Unauthorized',
+                    message: aclErrorMessage,
+                    code: 'E_ACL_CHECK_FAILED',
+                });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle a array for the methods config', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: '/acls', methods: ['get', 'delete'], fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            const [getResult, deleteResult, ...otherResults] = results;
+
+            expect(getResult.status).to.equal(401);
+            expect(getResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteResult.status).to.equal(401);
+            expect(deleteResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle a array for the routes config', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            const [getResult, deleteResult, ...otherResults] = results;
+
+            expect(getResult.status).to.equal(401);
+            expect(getResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteResult.status).to.equal(401);
+            expect(deleteResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should not return a 401 if the acl function returns no error', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['ADMIN'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+            const results = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            results.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle params in routes', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: ['/acls/:param', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+
+            const aclResults = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+            const aclParamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/someParam?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            const [getACLParamResult, deleteACLParamResult, ...otherACLParamResults] = aclParamResults;
+
+            aclResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            expect(getACLParamResult.status).to.equal(401);
+            expect(getACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteACLParamResult.status).to.equal(401);
+            expect(deleteACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherACLParamResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle splats in routes', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+            let called = false;
+            let passedParams = null;
+
+            const fn = async (params) => {
+                called = true;
+                passedParams = params;
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+            const acl = { routes: [{ routes: ['/*acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+
+            const aclResults = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+            const aclParamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/someParam?foo=bar', headers })));
+
+            expect(called).to.equal(true);
+            expect(passedParams).to.exist;
+
+            const [getACLResult, deleteACLResult, ...otherACLResults] = aclResults;
+            const [getACLParamResult, deleteACLParamResult, ...otherACLParamResults] = aclParamResults;
+
+            expect(getACLResult.status).to.equal(401);
+            expect(getACLResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteACLResult.status).to.equal(401);
+            expect(deleteACLResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherACLResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            expect(getACLParamResult.status).to.equal(401);
+            expect(getACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteACLParamResult.status).to.equal(401);
+            expect(deleteACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherACLParamResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should handle a complex acl config', async () => {
+            const aclErrorMessage = 'route restricted to role: "ADMIN"';
+
+            const fn = async (params) => {
+                if (!params.token.data.roles.includes('ADMIN')) {
+                    return new Error(aclErrorMessage);
+                }
+            };
+
+            const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
+            const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
+
+            const acl = {
+                routes: [
+                    { routes: ['/acls'], methods: '*', fn: async () => {} },
+                    { routes: ['/acls/:param'], methods: ['get', 'delete'], fn },
+                    { routes: ['/acls/:param/:nestedparam'], methods: ['get', 'delete'], fn },
+                ],
+            };
+
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const methods = ['get', 'delete', 'patch', 'post', 'put'];
+            const headers = { Authorization: `Bearer ${token}` };
+
+            const aclResults = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
+            const aclParamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/someParam?foo=bar', headers })));
+            const aclNestedparamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/some/nested?foo=bar', headers })));
+
+            const [getACLParamResult, deleteACLParamResult, ...otherACLParamResults] = aclParamResults;
+            const [getACLNestedparamResult, deleteACLNestedparamResult, ...otherACLNestedparamResults] = aclNestedparamResults;
+
+            aclResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            expect(getACLParamResult.status).to.equal(401);
+            expect(getACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteACLParamResult.status).to.equal(401);
+            expect(deleteACLParamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherACLParamResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            expect(getACLNestedparamResult.status).to.equal(401);
+            expect(getACLNestedparamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            expect(deleteACLNestedparamResult.status).to.equal(401);
+            expect(deleteACLNestedparamResult.data).to.eql({
+                statusCode: 401,
+                error: 'Unauthorized',
+                message: aclErrorMessage,
+                code: 'E_ACL_CHECK_FAILED',
+            });
+
+            otherACLNestedparamResults.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
             });
 
             await service.stop();
