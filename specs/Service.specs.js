@@ -160,9 +160,39 @@ describe('Service', () => {
             await service.stop();
         });
 
-        it('should not use jwt auth if handler is in "disabledRoutes" in auth config', async () => {
+        it('should not use jwt auth if handler is in "disabledRoutes" in auth config (string config)', async () => {
             const methods = ['delete', 'get', 'patch', 'post', 'put'];
-            const disabledRoutes = methods.map(method => ({ method, route: '/auth-test' }));
+            const disabledRoutes = [{ routes: '/*auth-test', methods: '*' }];
+            const auth = { secret: testSecret, disabledRoutes, options: { algorithms: ['HS256'] } };
+            const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth };
+            const service = new Service({ config: createConfig(cnfg) });
+            await service.start();
+
+            const resultsWithAuth = await Promise.all(methods.map(method => request[method]('/?foo=bar')));
+
+            resultsWithAuth.forEach((result) => {
+                expect(result.status).to.equal(401);
+                expect(result.data).to.eql({
+                    statusCode: 401,
+                    error: 'Unauthorized',
+                    message: 'jwt must be provided',
+                    code: 'E_TOKEN_VERIFY_ERROR',
+                });
+            });
+
+            const resultsWithoutAuth = await Promise.all(methods.map(method => request[method]('/auth-test?foo=bar')));
+
+            resultsWithoutAuth.forEach((result) => {
+                expect(result.status).to.equal(200);
+                expect(result.data).to.eql({ query: { foo: 'bar' } });
+            });
+
+            await service.stop();
+        });
+
+        it('should not use jwt auth if handler is in "disabledRoutes" in auth config (array config)', async () => {
+            const methods = ['delete', 'get', 'patch', 'post', 'put'];
+            const disabledRoutes = [{ routes: ['/*auth-test'], methods }];
             const auth = { secret: testSecret, disabledRoutes, options: { algorithms: ['HS256'] } };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth };
             const service = new Service({ config: createConfig(cnfg) });
@@ -409,7 +439,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -454,7 +484,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -494,7 +524,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -547,7 +577,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -600,7 +630,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -635,7 +665,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -695,7 +725,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -770,7 +800,7 @@ describe('Service', () => {
         it('should handle a complex acl config', async () => {
             const aclErrorMessage = 'route restricted to role: "ADMIN"';
 
-            const fn = async (params) => {
+            const fn = (params) => {
                 if (!params.token.data.roles.includes('ADMIN')) {
                     return new Error(aclErrorMessage);
                 }
