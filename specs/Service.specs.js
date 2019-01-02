@@ -439,7 +439,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -449,7 +449,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: '/acls', methods: 'get', fn }] };
+            const acl = { routes: [{ routes: '/acls', methods: 'get', check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -484,7 +484,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -494,7 +494,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: '/acls', methods: '*', fn }] };
+            const acl = { routes: [{ routes: '/acls', methods: '*', check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -524,7 +524,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -534,7 +534,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: '/acls', methods: ['get', 'delete'], fn }] };
+            const acl = { routes: [{ routes: '/acls', methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -577,7 +577,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -587,7 +587,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -630,7 +630,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -640,7 +640,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['ADMIN'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const acl = { routes: [{ routes: ['/acls', '/other-acls'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -665,7 +665,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -675,7 +675,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/acls/:param', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const acl = { routes: [{ routes: ['/acls/:param', '/other-acls'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -725,7 +725,7 @@ describe('Service', () => {
             let called = false;
             let passedParams = null;
 
-            const fn = (params) => {
+            const check = (params) => {
                 called = true;
                 passedParams = params;
                 if (!params.token.data.roles.includes('ADMIN')) {
@@ -735,7 +735,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/*acls', '/other-acls'], methods: ['get', 'delete'], fn }] };
+            const acl = { routes: [{ routes: ['/*acls', '/other-acls'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -800,7 +800,7 @@ describe('Service', () => {
         it('should handle a complex acl config', async () => {
             const aclErrorMessage = 'route restricted to role: "ADMIN"';
 
-            const fn = (params) => {
+            const check = (params) => {
                 if (!params.token.data.roles.includes('ADMIN')) {
                     return new Error(aclErrorMessage);
                 }
@@ -812,8 +812,8 @@ describe('Service', () => {
             const acl = {
                 routes: [
                     { routes: ['/acls'], methods: '*', fn: async () => {} },
-                    { routes: ['/acls/:param'], methods: ['get', 'delete'], fn },
-                    { routes: ['/acls/:param/:nestedparam'], methods: ['get', 'delete'], fn },
+                    { routes: ['/acls/:param'], methods: ['get', 'delete'], check },
+                    { routes: ['/acls/:param/:nestedparam'], methods: ['get', 'delete'], check },
                 ],
             };
 
