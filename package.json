@@ -37,8 +37,8 @@
     "boom": "^7.2.2",
     "express": "^4.16.4",
     "jsonwebtoken": "^8.2.1",
+    "path-to-regexp": "^2.4.0",
     "pino": "^5.9.0",
-    "route-parser": "0.0.5",
     "uuid": "^3.3.2"
   },
   "nyc": {

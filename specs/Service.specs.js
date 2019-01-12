@@ -162,7 +162,7 @@ describe('Service', () => {
 
         it('should not use jwt auth if handler is in "disabledRoutes" in auth config (string config)', async () => {
             const methods = ['delete', 'get', 'patch', 'post', 'put'];
-            const disabledRoutes = [{ routes: '/*auth-test', methods: '*' }];
+            const disabledRoutes = [{ routes: '/auth-test(.*)', methods: '*' }];
             const auth = { secret: testSecret, disabledRoutes, options: { algorithms: ['HS256'] } };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth };
             const service = new Service({ config: createConfig(cnfg) });
@@ -192,7 +192,7 @@ describe('Service', () => {
 
         it('should not use jwt auth if handler is in "disabledRoutes" in auth config (array config)', async () => {
             const methods = ['delete', 'get', 'patch', 'post', 'put'];
-            const disabledRoutes = [{ routes: ['/*auth-test'], methods }];
+            const disabledRoutes = [{ routes: ['/auth-test(.*)'], methods }];
             const auth = { secret: testSecret, disabledRoutes, options: { algorithms: ['HS256'] } };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth };
             const service = new Service({ config: createConfig(cnfg) });
@@ -414,10 +414,10 @@ describe('Service', () => {
             await service.stop();
         });
 
-        it('should ignore the acl config if no fn is provided', async () => {
+        it('should ignore the acl config if no check is provided', async () => {
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: '/acls', methods: 'get', fn: undefined }] };
+            const acl = { routes: [{ routes: '/acls', methods: 'get', check: undefined }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -675,7 +675,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/acls/:param', '/other-acls'], methods: ['get', 'delete'], check }] };
+            const acl = { routes: [{ routes: ['/acls/:param'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -735,7 +735,7 @@ describe('Service', () => {
 
             const token = await createToken({ secret: testSecret, exp: '5m', data: { roles: ['USER'] } });
             const auth = { secret: testSecret, options: { algorithms: ['HS256'] } };
-            const acl = { routes: [{ routes: ['/*acls', '/other-acls'], methods: ['get', 'delete'], check }] };
+            const acl = { routes: [{ routes: ['/acls(.*)'], methods: ['get', 'delete'], check }] };
             const cnfg = { host: '0.0.0.0', port: 3000, logLevel: 'silent', handlerFolder: '../specs/test-handlers', auth, acl };
             const service = new Service({ config: createConfig(cnfg) });
             await service.start();
@@ -744,7 +744,7 @@ describe('Service', () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const aclResults = await Promise.all(methods.map(method => request({ method, url: '/acls?foo=bar', headers })));
-            const aclParamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/someParam?foo=bar', headers })));
+            const aclParamResults = await Promise.all(methods.map(method => request({ method, url: '/acls/somePath?foo=bar', headers })));
 
             expect(called).to.equal(true);
             expect(passedParams).to.exist;
@@ -811,7 +811,7 @@ describe('Service', () => {
 
             const acl = {
                 routes: [
-                    { routes: ['/acls'], methods: '*', fn: async () => {} },
+                    { routes: ['/acls'], methods: '*', check: async () => {} },
                     { routes: ['/acls/:param'], methods: ['get', 'delete'], check },
                     { routes: ['/acls/:param/:nestedparam'], methods: ['get', 'delete'], check },
                 ],
